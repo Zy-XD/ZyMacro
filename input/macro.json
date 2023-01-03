@@ -1,0 +1,122 @@
+[
+    {
+        "time": 1.194997787475586,
+        "type": "keyDown",
+        "button": "w",
+        "pos": null
+    },
+    {
+        "time": 1.3189971446990967,
+        "type": "keyDown",
+        "button": "r",
+        "pos": null
+    },
+    {
+        "time": 1.3590006828308105,
+        "type": "keyUp",
+        "button": "w",
+        "pos": null
+    },
+    {
+        "time": 1.4709980487823486,
+        "type": "keyUp",
+        "button": "r",
+        "pos": null
+    },
+    {
+        "time": 1.4950003623962402,
+        "type": "keyDown",
+        "button": "i",
+        "pos": null
+    },
+    {
+        "time": 1.622997760772705,
+        "type": "keyUp",
+        "button": "i",
+        "pos": null
+    },
+    {
+        "time": 1.6550004482269287,
+        "type": "keyDown",
+        "button": "t",
+        "pos": null
+    },
+    {
+        "time": 1.8109972476959229,
+        "type": "keyUp",
+        "button": "t",
+        "pos": null
+    },
+    {
+        "time": 1.8589987754821777,
+        "type": "keyDown",
+        "button": "e",
+        "pos": null
+    },
+    {
+        "time": 2.026998996734619,
+        "type": "keyUp",
+        "button": "e",
+        "pos": null
+    },
+    {
+        "time": 2.7079992294311523,
+        "type": "keyDown",
+        "button": "Key.backspace",
+        "pos": null
+    },
+    {
+        "time": 2.832000494003296,
+        "type": "keyUp",
+        "button": "Key.backspace",
+        "pos": null
+    },
+    {
+        "time": 2.9159984588623047,
+        "type": "keyDown",
+        "button": "Key.backspace",
+        "pos": null
+    },
+    {
+        "time": 3.0520005226135254,
+        "type": "keyUp",
+        "button": "Key.backspace",
+        "pos": null
+    },
+    {
+        "time": 3.132000207901001,
+        "type": "keyDown",
+        "button": "Key.backspace",
+        "pos": null
+    },
+    {
+        "time": 3.252000093460083,
+        "type": "keyUp",
+        "button": "Key.backspace",
+        "pos": null
+    },
+    {
+        "time": 3.368999719619751,
+        "type": "keyDown",
+        "button": "Key.backspace",
+        "pos": null
+    },
+    {
+        "time": 3.5049993991851807,
+        "type": "keyUp",
+        "button": "Key.backspace",
+        "pos": null
+    },
+    {
+        "time": 3.7850005626678467,
+        "type": "keyDown",
+        "button": "Key.backspace",
+        "pos": null
+    },
+    {
+        "time": 3.9050002098083496,
+        "type": "keyUp",
+        "button": "Key.backspace",
+        "pos": null
+    }
+]
