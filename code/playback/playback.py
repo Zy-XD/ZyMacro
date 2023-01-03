@@ -124,12 +124,20 @@ def main():
     t1 = threading.Thread(target=toggle_check)
     t1.start()
 
-    playActions(MACRO_FILE)
-
-    sleep(2.00)
     global operation_halted
-    operation_halted = True
-    print("Macro Operation Successfully Executed")
+
+    if not operation_halted:
+        playActions(MACRO_FILE)
+
+    if operation_halted:
+        print("Halting Macro Operation...")
+        sleep(2.0)
+        print("Macro Operation Stopped Unexpectedly")
+    else:
+        sleep(2.00)
+        operation_halted = True
+        print("Macro Operation Successfully Executed")
+    
     global operation_stopped
     operation_stopped = True
     #raise keyboard.Listener.StopException
