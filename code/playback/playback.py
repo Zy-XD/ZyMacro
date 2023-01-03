@@ -26,10 +26,19 @@ macro_duration = 30.00
 global macro_start_delay
 macro_start_delay = int(5)
 
+global MACRO_FILE
 MACRO_FILE = "macro.json"
+
+global TOGGLE_PLAYBACK
 TOGGLE_PLAYBACK = keyboard.Key.esc
+
+global start_time
 start_time = None
+
+global operation_halted
 operation_halted = False
+
+global operation_stopped
 operation_stopped = False
 
 def main():
@@ -124,9 +133,18 @@ def main():
     t1 = threading.Thread(target=toggle_check)
     t1.start()
 
+    #global t2
+
+    #t2 = threading.Thread(target=playActions, args=MACRO_FILE)
+    #t2.daemon = True
+    #t2.start()
+
+    # Wait until thread playing actions concludes
+    #t2.join()
+
     global operation_halted
 
-    if not operation_halted:
+    while not operation_halted and elapsed_time() < macro_duration:
         playActions(MACRO_FILE)
 
     if operation_halted:
@@ -135,8 +153,8 @@ def main():
         print("Macro Operation Stopped Unexpectedly")
     else:
         sleep(2.00)
-        operation_halted = True
         print("Macro Operation Successfully Executed")
+        operation_halted = True
     
     global operation_stopped
     operation_stopped = True
@@ -159,9 +177,16 @@ def toggle_check():
 
 def key_release(key):
     global operation_halted
+    global t2
     if key == TOGGLE_PLAYBACK:
-        print("Halt key pressed...")
         operation_halted = True
+        #print("Halt key pressed...")
+        #sleep(1.0)
+        #print("Halting Macro Operation...")
+        #sleep(2.0)
+        #print("Macro Operation Stopped Unexpectedly")
+        #exit()
+        #quit()
         raise keyboard.Listener.StopException
 
 def elapsed_time():
@@ -189,6 +214,8 @@ def countdownTimer():
 
 def playActions(filename, i=0):
     
+    global operation_halted
+
     # Read the file
     global args
     if args.path is None:
@@ -214,6 +241,9 @@ def playActions(filename, i=0):
         data = json.load(jsonFile)
 
         for index, action in enumerate(data):
+
+            if (operation_halted):
+                break
 
             action_start_time = time()
 
@@ -256,7 +286,6 @@ def playActions(filename, i=0):
             sleep(action_time)
 
     if repeat_macro:
-        global operation_halted
         if elapsed_time() > macro_duration:
             print("Reached duration specified...")
         elif operation_halted:
