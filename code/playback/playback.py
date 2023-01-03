@@ -7,6 +7,7 @@ import math, random
 import argparse
 from pynput import mouse, keyboard
 import threading
+import pydirectinput
 
 # from recorder import elapsed_time
 
@@ -215,11 +216,13 @@ def playActions(filename, i=0):
             # Perform action
             if action['type'] == 'keyDown':
                 key = convertKey(action['button'])
-                pyautogui.keyDown(key)
+                #pyautogui.keyDown(key)
+                pydirectinput.keyDown(key)
                 print("keyDown on {}".format(key))
             elif action['type'] == 'keyUp':
                 key = convertKey(action['button'])
-                pyautogui.keyUp(key)
+                #pyautogui.keyUp(key)
+                pydirectinput.keyUp(key)
                 print("keyUp on {}".format(key))
             elif action['type'] == 'click':
                 pyautogui.click(action['pos'][0], action['pos'][1], duration=0.25)
