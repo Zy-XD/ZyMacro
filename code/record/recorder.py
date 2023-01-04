@@ -4,6 +4,8 @@ import math
 import json
 import os
 import argparse
+import simplejson
+from decimal import Decimal
 
 global RECORD_HOTKEY
 DEFAULT_HOTKEY = keyboard.Key.esc
@@ -25,6 +27,8 @@ unreleased_clicks = list()
 input_events = list()
 
 operation_completed = False
+
+start_time = Decimal(0)
 
 class EventType():
     KEYDOWN = 'keyDown'
@@ -79,7 +83,7 @@ def main():
     global input_events
 
     print("")
-    print(json.dumps(input_events))
+    print(simplejson.dumps(input_events))
 
     # Write output to a file
     script_dir = os.path.abspath(os.path.dirname(__file__))
@@ -88,7 +92,7 @@ def main():
 
     filepath = "..\\zymacro\\output\\" + '{}.json'.format(OUTPUT_FILENAME)
     with open(filepath, 'w') as outfile:
-        json.dump(input_events, outfile, indent=4)
+        simplejson.dump(input_events, outfile, indent=4)
 
     print("Saved macro at - {}".format(os.path.abspath(filepath)))
 
@@ -98,7 +102,7 @@ def start_recording(key):
 
 def elapsed_time():
     global start_time
-    return time() - start_time
+    return Decimal(Decimal(time()) - Decimal(start_time))
 
 def record_event(event_type, event_time, button, pos=None):
 
@@ -157,12 +161,12 @@ def on_release(key):
 
 def on_click(x, y, button, pressed):
 
-#    global unreleased_clicks
+    global unreleased_clicks
 
-#    if button in unreleased_clicks:
-#        return
-#    else:
-#        unreleased_clicks.append(button)
+    if button in unreleased_clicks:
+        return
+    else:
+       unreleased_clicks.append(button)
 
     if pressed:
         record_event(EventType.CLICKDOWN, elapsed_time(), button, (x, y))
@@ -171,12 +175,12 @@ def on_click(x, y, button, pressed):
 
 def on_click_release(x, y, button, pressed):
 
-#    global unreleased_clicks
+    global unreleased_clicks
 
-#    try:
-#        unreleased_clicks.remove(button)
-#    except ValueError:
-#        print("Error: {} not valid - Not in unreleased_clicks".format(button))
+    try:
+        unreleased_clicks.remove(button)
+    except ValueError:
+        print("Error: {} not valid - Not in unreleased_clicks".format(button))
         
     try:
         record_event(EventType.CLICKUP, elapsed_time(), button, (x, y))

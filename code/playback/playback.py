@@ -3,11 +3,13 @@ import time
 from time import sleep, time
 import os
 import json
+import simplejson
 import math, random
 import argparse
 from pynput import mouse, keyboard
 import threading
 import pydirectinput
+from decimal import Decimal
 
 # from recorder import elapsed_time
 
@@ -29,6 +31,12 @@ macro_start_delay = int(5)
 global MACRO_FILE
 MACRO_FILE = "macro.json"
 
+global TOGGLE_PAUSE
+TOGGLE_PAUSE = keyboard.Key.pause
+
+global paused
+paused = False
+
 global TOGGLE_PLAYBACK
 TOGGLE_PLAYBACK = keyboard.Key.esc
 
@@ -40,6 +48,12 @@ operation_halted = False
 
 global operation_stopped
 operation_stopped = False
+
+global held_keys
+held_keys = list()
+
+global held_clicks
+held_clicks = list()
 
 def main():
 
@@ -54,6 +68,7 @@ def main():
 
     parser.add_argument('-p', '--path', help="Path to macro file", required=False)
     parser.add_argument('-k', '--hotkey', help="Hotkey to toggle playback", required=False)
+    parser.add_argument('-kk', '--pause', help="Hotkey to toggle pause", required=False)
     parser.add_argument('-r', '--repeat', type=bool, help="Repeat macro for duration", required=False)
     parser.add_argument('-rrd', '--repeatrandomdelay', type=bool, help="Delay between macro instances are random : scaled with -rd", required=False)
     parser.add_argument('-rd', '--repeatdelay', type=float, help="Length of delay between macro instances", required=False)
@@ -119,6 +134,15 @@ def main():
 
     print("Setup complete, awaiting key input - {}".format(TOGGLE_PLAYBACK.name))
 
+    global TOGGLE_PAUSE
+    try:
+        if args.pause is not None:
+            TOGGLE_PAUSE = args.pause
+    except:
+        None
+
+    print("To toggle pause use - {}".format(TOGGLE_PAUSE.name))
+
     with keyboard.Listener(on_release=start_playback) as listener:
         listener.join()
 
@@ -144,7 +168,7 @@ def main():
 
     global operation_halted
 
-    while not operation_halted and elapsed_time() < macro_duration:
+    if not operation_halted and elapsed_time() < macro_duration:
         playActions(MACRO_FILE)
 
     if operation_halted:
@@ -178,6 +202,7 @@ def toggle_check():
 def key_release(key):
     global operation_halted
     global t2
+    global paused
     if key == TOGGLE_PLAYBACK:
         operation_halted = True
         #print("Halt key pressed...")
@@ -188,6 +213,16 @@ def key_release(key):
         #exit()
         #quit()
         raise keyboard.Listener.StopException
+    elif key == TOGGLE_PAUSE:
+
+        if paused:
+            for key in held_keys:
+                    pydirectinput.keyUp(key)
+            for click in held_clicks:
+                pydirectinput.mouseUp(click)
+
+        paused = not paused
+
 
 def elapsed_time():
     global start_time
@@ -215,6 +250,8 @@ def countdownTimer():
 def playActions(filename, i=0):
     
     global operation_halted
+    global paused
+    global held_keys
 
     # Read the file
     global args
@@ -233,19 +270,29 @@ def playActions(filename, i=0):
     else:
         filepath = filename
 
-    print("Starting iteration {}...".format(i))
+    if repeat_macro:
+        print("Starting iteration {}...".format(i))
 
     with open(filepath, 'r') as jsonFile:
 
         # Parse the json
-        data = json.load(jsonFile)
+        data = simplejson.load(jsonFile)
 
         for index, action in enumerate(data):
 
-            if (operation_halted):
+            if operation_halted:
                 break
+            elif paused:
+                print("Macro Operation Paused")
+                for key in held_keys:
+                    pydirectinput.keyUp(key)
+                for click in held_clicks:
+                    pydirectinput.mouseUp(click)
+                while paused:
+                    if operation_halted:
+                        break
 
-            action_start_time = time()
+            action_start_time = Decimal(time())
 
             # Look for esc input to exit
             if action['button'] == 'Key.esc':
@@ -256,37 +303,49 @@ def playActions(filename, i=0):
                 key = convertKey(action['button'])
                 #pyautogui.keyDown(key)
                 pydirectinput.keyDown(key)
+                held_keys.append(key)
                 print("keyDown on {}".format(key))
             elif action['type'] == 'keyUp':
                 key = convertKey(action['button'])
                 #pyautogui.keyUp(key)
                 pydirectinput.keyUp(key)
+                held_keys.remove(key)
                 print("keyUp on {}".format(key))
-            elif action['type'] == 'click':
-                pyautogui.click(action['pos'][0], action['pos'][1], duration=0.25)
+            elif action['type'] == 'clickDown':
+                #pyautogui.click(action['pos'][0], action['pos'][1], duration=0.25)
+                #pydirectinput.click(action['pos'][0], action['pos'][1], duration=0.25)
+                click = convertClick(action['button'])
+                pydirectinput.mouseDown(action['pos'][0], action['pos'][1], button=click)
+                held_clicks.append(click)
+                print("clickDown on {}".format(click))
+            elif action['type'] == 'clickUp':
+                click = convertClick(action['button'])
+                pydirectinput.mouseUp(action['pos'][0], action['pos'][1], button=click)
+                held_clicks.remove(click)
+                print("clickUp on {}".format(click))
 
             try:
                 next_action = data[index+1]
             except IndexError:
                 break
 
-            action_time = next_action['time'] - action['time']
+            action_time = Decimal(Decimal(next_action['time']) - Decimal(action['time']))
 
             if action_time < 0:
                 raise Exception('Unexpected action order')
 
-            action_time -= time() - action_start_time
+            action_time -= Decimal(Decimal(time()) - Decimal(action_start_time))
 
             if action_time < 0:
                 action_time = 0
             
-            if action_time >= 1:
-                print("Sleeping for {}".format(round(action_time)))
+#            if action_time >= 1:
+            print("Sleeping for {}".format(round(action_time, 5)))
 
-            sleep(action_time)
+            sleep(float(action_time))
 
     if repeat_macro:
-        if elapsed_time() > macro_duration:
+        if Decimal(elapsed_time()) > macro_duration:
             print("Reached duration specified...")
         elif operation_halted:
             print("Halting Macro Operation...")
@@ -329,6 +388,10 @@ def convertKey(button):
         return PYNPUT_SPECIAL_CASE_MAP[blank_key]
 
     return blank_key
+
+def convertClick(button):
+    blank_button = button.replace('Button.', '')
+    return blank_button
 
 if __name__ == "__main__" and not operation_stopped:
     main()
