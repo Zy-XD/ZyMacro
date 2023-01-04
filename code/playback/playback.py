@@ -303,25 +303,29 @@ def playActions(filename, i=0):
                 key = convertKey(action['button'])
                 #pyautogui.keyDown(key)
                 pydirectinput.keyDown(key)
-                held_keys.append(key)
+                if not held_keys.__contains__(key):
+                    held_keys.append(key)
                 print("keyDown on {}".format(key))
             elif action['type'] == 'keyUp':
                 key = convertKey(action['button'])
                 #pyautogui.keyUp(key)
                 pydirectinput.keyUp(key)
-                held_keys.remove(key)
+                if held_keys.__contains__(key):
+                    held_keys.remove(key)
                 print("keyUp on {}".format(key))
             elif action['type'] == 'clickDown':
                 #pyautogui.click(action['pos'][0], action['pos'][1], duration=0.25)
                 #pydirectinput.click(action['pos'][0], action['pos'][1], duration=0.25)
                 click = convertClick(action['button'])
                 pydirectinput.mouseDown(action['pos'][0], action['pos'][1], button=click)
-                held_clicks.append(click)
+                if not held_clicks.__contains__(click):
+                    held_clicks.append(click)
                 print("clickDown on {}".format(click))
             elif action['type'] == 'clickUp':
                 click = convertClick(action['button'])
                 pydirectinput.mouseUp(action['pos'][0], action['pos'][1], button=click)
-                held_clicks.remove(click)
+                if held_clicks.__contains__(click):
+                    held_clicks.remove(click)
                 print("clickUp on {}".format(click))
 
             try:
