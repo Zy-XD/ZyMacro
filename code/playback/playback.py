@@ -10,6 +10,7 @@ from pynput import mouse, keyboard
 import threading
 import pydirectinput
 from decimal import Decimal
+import multiprocessing.dummy as mp
 
 # from recorder import elapsed_time
 
@@ -41,7 +42,7 @@ global TOGGLE_PLAYBACK
 TOGGLE_PLAYBACK = keyboard.Key.esc
 
 global start_time
-start_time = None
+start_time = Decimal(0)
 
 global operation_halted
 operation_halted = False
@@ -226,7 +227,7 @@ def key_release(key):
 
 def elapsed_time():
     global start_time
-    return time() - start_time
+    return Decimal(Decimal(time()) - Decimal(start_time))
 
 def initializePyAutoGUI():
 
@@ -276,77 +277,13 @@ def playActions(filename, i=0):
     with open(filepath, 'r') as jsonFile:
 
         # Parse the json
+        global data
         data = simplejson.load(jsonFile)
 
-        for index, action in enumerate(data):
-
-            if operation_halted:
-                break
-            elif paused:
-                print("Macro Operation Paused")
-                for key in held_keys:
-                    pydirectinput.keyUp(key)
-                for click in held_clicks:
-                    pydirectinput.mouseUp(click)
-                while paused:
-                    if operation_halted:
-                        break
-
-            action_start_time = Decimal(time())
-
-            # Look for esc input to exit
-            if action['button'] == 'Key.esc':
-                break
-
-            # Perform action
-            if action['type'] == 'keyDown':
-                key = convertKey(action['button'])
-                #pyautogui.keyDown(key)
-                pydirectinput.keyDown(key)
-                if not held_keys.__contains__(key):
-                    held_keys.append(key)
-                print("keyDown on {}".format(key))
-            elif action['type'] == 'keyUp':
-                key = convertKey(action['button'])
-                #pyautogui.keyUp(key)
-                pydirectinput.keyUp(key)
-                if held_keys.__contains__(key):
-                    held_keys.remove(key)
-                print("keyUp on {}".format(key))
-            elif action['type'] == 'clickDown':
-                #pyautogui.click(action['pos'][0], action['pos'][1], duration=0.25)
-                #pydirectinput.click(action['pos'][0], action['pos'][1], duration=0.25)
-                click = convertClick(action['button'])
-                pydirectinput.mouseDown(action['pos'][0], action['pos'][1], button=click)
-                if not held_clicks.__contains__(click):
-                    held_clicks.append(click)
-                print("clickDown on {}".format(click))
-            elif action['type'] == 'clickUp':
-                click = convertClick(action['button'])
-                pydirectinput.mouseUp(action['pos'][0], action['pos'][1], button=click)
-                if held_clicks.__contains__(click):
-                    held_clicks.remove(click)
-                print("clickUp on {}".format(click))
-
-            try:
-                next_action = data[index+1]
-            except IndexError:
-                break
-
-            action_time = Decimal(Decimal(next_action['time']) - Decimal(action['time']))
-
-            if action_time < 0:
-                raise Exception('Unexpected action order')
-
-            action_time -= Decimal(Decimal(time()) - Decimal(action_start_time))
-
-            if action_time < 0:
-                action_time = 0
-            
-#            if action_time >= 1:
-            print("Sleeping for {}".format(round(action_time, 5)))
-
-            sleep(float(action_time))
+        pool = mp.Pool(6) # No. of threads
+        pool.map(actionIterator, range(0, len(data)))
+        pool.close()
+        pool.join()
 
     if repeat_macro:
         if Decimal(elapsed_time()) > macro_duration:
@@ -367,6 +304,90 @@ def playActions(filename, i=0):
                 print("Delaying for {}".format(repeat_macro_delay))
                 sleep(repeat_macro_delay)
                 playActions(filename, i+1)
+
+def actionIterator(iterations): # Using multithreading function to increase accuracy of playback by eliminating queue
+
+    global data
+    index = iterations
+
+#    if index >= len(data):
+#        return
+
+    action = data[index]
+
+    if Decimal(elapsed_time()) < Decimal(action['time']):
+        sleep(float(Decimal(action['time']) - Decimal(elapsed_time())))
+
+#    while Decimal(elapsed_time()) < Decimal(action['time']):
+#        None
+
+    if operation_halted:
+        return
+    elif paused:
+        print("Macro Operation Paused")
+        for key in held_keys:
+            pydirectinput.keyUp(key)
+        for click in held_clicks:
+            pydirectinput.mouseUp(click)
+        while paused:
+            if operation_halted:
+                break
+
+    action_start_time = Decimal(time())
+
+    # Look for esc input to exit
+    if action['button'] == 'Key.esc':
+        return
+
+    # Perform action
+    if action['type'] == 'keyDown':
+        key = convertKey(action['button'])
+        #pyautogui.keyDown(key)
+        pydirectinput.keyDown(key)
+        if not held_keys.__contains__(key):
+            held_keys.append(key)
+        print("keyDown on {}".format(key))
+    elif action['type'] == 'keyUp':
+        key = convertKey(action['button'])
+        #pyautogui.keyUp(key)
+        pydirectinput.keyUp(key)
+        if held_keys.__contains__(key):
+            held_keys.remove(key)
+        print("keyUp on {}".format(key))
+    elif action['type'] == 'clickDown':
+        #pyautogui.click(action['pos'][0], action['pos'][1], duration=0.25)
+        #pydirectinput.click(action['pos'][0], action['pos'][1], duration=0.25)
+        click = convertClick(action['button'])
+        pydirectinput.mouseDown(action['pos'][0], action['pos'][1], button=click)
+        if not held_clicks.__contains__(click):
+            held_clicks.append(click)
+        print("clickDown on {}".format(click))
+    elif action['type'] == 'clickUp':
+        click = convertClick(action['button'])
+        pydirectinput.mouseUp(action['pos'][0], action['pos'][1], button=click)
+        if held_clicks.__contains__(click):
+            held_clicks.remove(click)
+        print("clickUp on {}".format(click))
+
+    try:
+        next_action = data[index+1]
+    except IndexError:
+        return
+
+    action_time = Decimal(Decimal(next_action['time']) - Decimal(action['time']))
+
+    if action_time < 0:
+        raise Exception('Unexpected action order')
+
+    action_time -= Decimal(Decimal(time()) - Decimal(action_start_time))
+
+    if action_time < 0:
+        action_time = 0
+    
+#            if action_time >= 1:
+    print("Sleeping for {}".format(round(action_time, 5)))
+
+    sleep(float(action_time))
 
 def convertKey(button):
 
