@@ -56,6 +56,9 @@ held_keys = list()
 global held_clicks
 held_clicks = list()
 
+global executed_actions
+executed_actions = list()
+
 def main():
 
     print("ZyMacro - Playback")
@@ -286,6 +289,9 @@ def playActions(filename, i=0):
         pool.join()
 
     if repeat_macro:
+
+        executed_actions.clear()
+
         if Decimal(elapsed_time()) > macro_duration:
             print("Reached duration specified...")
         elif operation_halted:
@@ -314,6 +320,12 @@ def actionIterator(iterations): # Using multithreading function to increase accu
 #        return
 
     action = data[index]
+
+    global executed_actions
+    if executed_actions.__contains__(action):
+        return
+    else:
+        executed_actions.append(action)
 
     if Decimal(elapsed_time()) < Decimal(action['time']):
         sleep(float(Decimal(action['time']) - Decimal(elapsed_time())))
