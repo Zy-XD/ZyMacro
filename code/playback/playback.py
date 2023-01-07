@@ -14,11 +14,12 @@ import multiprocessing.dummy as mp
 
 # from recorder import elapsed_time
 
+#region Global Variables
 global repeat_macro
 repeat_macro = False
 
 global repeat_macro_delay
-repeat_macro_delay = 0.00
+repeat_macro_delay = 1.00
 
 global repeat_macro_random_delay
 repeat_macro_random_delay = False
@@ -50,6 +51,12 @@ operation_halted = False
 global operation_stopped
 operation_stopped = False
 
+global use_multiple
+use_multiple = False
+
+global random_multiple
+random_multiple = False
+
 global held_keys
 held_keys = list()
 
@@ -58,13 +65,15 @@ held_clicks = list()
 
 global executed_actions
 executed_actions = list()
+#endregion
 
 def main():
 
     print("ZyMacro - Playback")
 
     # Input options here
-    # CLI Features
+
+    #region CLI Options
     parser = argparse.ArgumentParser(
         prog='Zy Macro - Playback',
         description='Macro Playback',
@@ -78,6 +87,8 @@ def main():
     parser.add_argument('-rd', '--repeatdelay', type=float, help="Length of delay between macro instances", required=False)
     parser.add_argument('-d', '--duration', type=float, help="Duration of repeat macro operation", required=False)
     parser.add_argument('-sd', '--startdelay', type=int, help="Length of delay before start of operation", required=False)
+    parser.add_argument('-m', '--multiple', type=bool, help="Use multiple macro scripts interchangeably", required=False)
+    parser.add_argument('-mr', '--multiplerandom', type=bool, help="Length of delay before start of operation", required=False)
 
     global args
     args = parser.parse_args()
@@ -126,8 +137,23 @@ def main():
     except:
         None
 
-    print("Settings: Start Delay - {} | Duration - {} | Repeat - {} | Repeat Delay - {} | Repeat Random Delay - {}"
-        .format(macro_start_delay, macro_duration, repeat_macro, repeat_macro_delay, repeat_macro_random_delay))
+    global use_multiple
+    try:
+        if args.multiple is not None:
+            use_multiple = args.multiple
+    except:
+        None
+
+    global random_multiple
+    try:
+        if args.multiplerandom is not None:
+            random_multiple = args.multiplerandom
+    except:
+        None
+
+    print("Settings: Start Delay - {} | Duration - {} | Repeat - {} | Repeat Delay - {} | Repeat Random Delay - {} | Multiple Macros - {} | Random Multiple - {}"
+        .format(macro_start_delay, macro_duration, repeat_macro, repeat_macro_delay, repeat_macro_random_delay, use_multiple, random_multiple))
+    #endregion
 
     global TOGGLE_PLAYBACK
     try:
