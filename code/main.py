@@ -14,19 +14,6 @@ def main():
 def initializePyAutoGUI():
     pyautogui.FAILSAFE = True
 
-# def countdownTimer():
-#    print("Starting", end="")
-#    for i in range(0,5):
-#        print(".", end="")
-#        sleep(1)
-#    print("Go")
-
-# def holdKey(key, secs=1.00):
-#    pyautogui.keyDown(key)
-#    sleep(secs)
-#    pyautogui.keyUp(key)
-#    sleep(DELAY_BETWEEN_COMMANDS)
-
 def reportMousePosition(secs=10):
     for i in range(0, secs):
         print(pyautogui.position())

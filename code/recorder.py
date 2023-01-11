@@ -1,5 +1,6 @@
 from pynput import mouse, keyboard
 from time import time
+from threading import Event
 import math
 import json
 import os
@@ -100,33 +101,69 @@ def main():
 
     print("Saved macro at - {}".format(os.path.abspath(filepath)))
 
-def file_rename(filepath, OUTPUT_FILENAME): # Output file rename in the case of identical file name detected in path
+def file_rename(filepath = str, edit_name = str): # Output file rename in the case of identical file name detected in path
 
-    if os.path.exists(os.path.abspath(filepath + '{}.json'.format(OUTPUT_FILENAME))):
+    if os.path.exists(os.path.abspath(filepath + '{}.json'.format(edit_name))):
 
-        if not (OUTPUT_FILENAME[len(OUTPUT_FILENAME)-2] == '_' and str(OUTPUT_FILENAME[len(OUTPUT_FILENAME)-1]).isdigit()):
-            OUTPUT_FILENAME += '_1'
+        if not (edit_name.__contains__('_') and str(edit_name[len(edit_name)-1]).isdigit()):
+            edit_name += '_1'
 
         i = 0
         j = 1
 
         while i < j:
 
-            OUTPUT_FILENAME = OUTPUT_FILENAME.replace(OUTPUT_FILENAME[len(OUTPUT_FILENAME)-1], '{}'.format(i.__index__()))
+            suffix_index = len(edit_name)-1
 
-            if os.path.exists(os.path.abspath("..\\zymacro\\output\\" + '{}.json'.format(OUTPUT_FILENAME))):
+            k = 0
+            l = 1
+
+            while k < l:
+                if str(edit_name[len(edit_name)-1-k]).isdigit():
+                    k += 1
+                    l += 1
+                    suffix_index -= 1
+                elif str(edit_name[len(edit_name)-1-k]) == '_':
+                    k += 1
+                else:
+                    raise Exception("Suffix format is invalid")
+
+            edit_name = edit_name.replace(edit_name[suffix_index], '_{}'.format(i.__index__()))
+
+            if os.path.exists(os.path.abspath("..\\zymacro\\output\\" + '{}.json'.format(edit_name))):
                 i += 1
                 j += 1
             else:
                 i += 1
-                return OUTPUT_FILENAME
+                return edit_name
 
     else:
-        return OUTPUT_FILENAME
+        return edit_name
 
 def start_recording(key):
+    global keyboard_listener
+    global keyboard_listener2
     if key == RECORD_HOTKEY:
         raise keyboard.Listener.StopException
+
+def end_recording(key):
+
+    if key == RECORD_HOTKEY:
+
+        # Prevents start key press from ending record session prematurely
+        if elapsed_time() < 0.5:
+            return
+
+        # Stop mouse_listener
+        global mouse_listener
+        #global mouse_listener2
+        global keyboard_listener
+        global keyboard_listener2
+        mouse_listener.stop()
+        #mouse_listener2.stop()
+        # Stop keyboard.Listener
+        keyboard.Listener.stop(keyboard_listener)
+        keyboard.Listener.stop(keyboard_listener2)
 
 def elapsed_time():
     global start_time
@@ -137,6 +174,14 @@ def record_event(event_type, event_time, button, pos=None):
     global input_events
 
     if button != RECORD_HOTKEY:
+
+        if input_events.__contains__({
+            'time': event_time,
+            'type': event_type,
+            'button': str(button),
+            'pos': pos
+        }):
+            return
 
         input_events.append({
             'time': event_time,
@@ -179,29 +224,22 @@ def on_release(key):
         record_event(EventType.KEYUP, elapsed_time(), key.char)
     except AttributeError:
         record_event(EventType.KEYUP, elapsed_time(), key)
-    
-    if key == RECORD_HOTKEY:
-        # Stop mouse_listener
-        global mouse_listener
-        mouse_listener.stop()
-        # Stop keyboard.Listener
-        raise keyboard.Listener.StopException
 
 def on_click(x, y, button, pressed):
 
     global unreleased_clicks
 
-    if button in unreleased_clicks:
-        return
-    else:
-       unreleased_clicks.append(button)
-
+    #if button in unreleased_clicks and pressed:
+        #return
+    #elif not button in unreleased_clicks and pressed:
     if pressed:
+        #unreleased_clicks.append(button)
         record_event(EventType.CLICKDOWN, elapsed_time(), button, (x, y))
     else:
         record_event(EventType.CLICKUP, elapsed_time(), button, (x, y))
+        #unreleased_clicks.remove(button)
 
-def on_click_release(x, y, button, pressed):
+def on_click_release(x, y, button):
 
     global unreleased_clicks
 
@@ -219,15 +257,42 @@ def runListeners():
     
     # Collect mouse input events
     global mouse_listener
-    mouse_listener = mouse.Listener(on_click=on_click, on_release=on_click_release)
+    #global mouse_listener2
+    mouse_listener = mouse.Listener(on_click=on_click)
+    #mouse_listener2 = mouse.Listener()
+
+    #with mouse.Listener(on_click=on_click) as listener:
+        #mouse_listener = listener.join()
+
     mouse_listener.start()
+    #mouse_listener2.start()
     # Wait for Listener to be ready
     mouse_listener.wait()
+    #mouse_listener2.wait()
 
-    with keyboard.Listener(on_press=on_press, on_release=on_release) as listener:
-        global start_time
-        start_time = time()
-        listener.join()
+    global start_time
+    global keyboard_listener, keyboard_listener2
+    keyboard_listener = keyboard.Listener(on_press=on_press)
+    keyboard_listener2 = keyboard.Listener(on_release=on_release)
+
+    keyboard_listener.start()
+    keyboard_listener2.start()
+
+    keyboard_listener.wait()
+    keyboard_listener2.wait()
+
+    end_listener = keyboard.Listener(on_release=end_recording)
+    end_listener.start()
+    end_listener.wait()
+
+    print("Recording Started")
+    
+    start_time = time()
+
+    keyboard_listener.join()
+    keyboard_listener2.join()
+    mouse_listener.join()
+    #mouse_listener2.join()
 
 if __name__ == "__main__":
     main()

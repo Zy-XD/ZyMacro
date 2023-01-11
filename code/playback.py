@@ -1,6 +1,7 @@
 import pyautogui
 import time
 from time import sleep, time
+from threading import Event
 import os
 import json
 import simplejson
@@ -65,6 +66,9 @@ held_clicks = list()
 
 global executed_actions
 executed_actions = list()
+
+global macroList
+macroList = list()
 #endregion
 
 def main():
@@ -82,13 +86,13 @@ def main():
     parser.add_argument('-p', '--path', help="Path to macro file", required=False)
     parser.add_argument('-k', '--hotkey', help="Hotkey to toggle playback", required=False)
     parser.add_argument('-kk', '--pause', help="Hotkey to toggle pause", required=False)
-    parser.add_argument('-r', '--repeat', type=bool, help="Repeat macro for duration", required=False)
-    parser.add_argument('-rrd', '--repeatrandomdelay', type=bool, help="Delay between macro instances are random : scaled with -rd", required=False)
+    parser.add_argument('-r', '--repeat', action='store_true', default=False, help="Repeat macro for duration", required=False)
+    parser.add_argument('-rrd', '--repeatrandomdelay', action='store_true', default=False, help="Delay between macro instances are random : scaled with -rd", required=False)
     parser.add_argument('-rd', '--repeatdelay', type=float, help="Length of delay between macro instances", required=False)
     parser.add_argument('-d', '--duration', type=float, help="Duration of repeat macro operation", required=False)
     parser.add_argument('-sd', '--startdelay', type=int, help="Length of delay before start of operation", required=False)
-    parser.add_argument('-m', '--multiple', type=bool, help="Use multiple macro scripts interchangeably", required=False)
-    parser.add_argument('-mr', '--multiplerandom', type=bool, help="Length of delay before start of operation", required=False)
+    parser.add_argument('-m', '--multiple', action='store_true', default=False, help="Use multiple macro scripts interchangeably", required=False)
+    parser.add_argument('-mr', '--multiplerandom', action='store_true', default=False, help="Length of delay before start of operation", required=False)
 
     global args
     args = parser.parse_args()
@@ -99,8 +103,6 @@ def main():
             MACRO_FILE = args.path
     except:
         None
-
-    print("Using macro: {}".format(MACRO_FILE))
 
     global macro_start_delay
     try:
@@ -150,6 +152,41 @@ def main():
             random_multiple = args.multiplerandom
     except:
         None
+
+    if random_multiple == True:
+        use_multiple = True
+
+    global macroList
+    global filepath
+
+    if use_multiple:
+
+        if args.path is None:
+            filepath = filepath = "..\\zymacro\\input\\"
+        else:
+            filepath = args.path
+
+        # Credit: https://pythonguides.com/python-get-all-files-in-directory/
+        for root, dirs, files in os.walk(filepath):
+            for file in files:
+                macroList.append(os.path.join(root,file))
+
+        if random_multiple:
+            filepath = macroList[random.randrange(0,len(macroList)-1)]
+        else:
+            filepath = macroList[0]
+
+        macros_used = ""
+
+        for path in macroList:
+            macros_used += os.path.abspath(path)
+            if path != macroList[len(macroList)-1]:
+                macros_used += ", "
+
+        print("Using macros: {}".format(macros_used))
+
+    else:
+        print("Using macro: {}".format(MACRO_FILE))
 
     print("Settings: Start Delay - {} | Duration - {} | Repeat - {} | Repeat Delay - {} | Repeat Random Delay - {} | Multiple Macros - {} | Random Multiple - {}"
         .format(macro_start_delay, macro_duration, repeat_macro, repeat_macro_delay, repeat_macro_random_delay, use_multiple, random_multiple))
@@ -253,7 +290,6 @@ def key_release(key):
 
         paused = not paused
 
-
 def elapsed_time():
     global start_time
     return Decimal(Decimal(time()) - Decimal(start_time))
@@ -282,37 +318,108 @@ def playActions(filename, i=0):
     global operation_halted
     global paused
     global held_keys
+    global macroList
 
-    # Read the file
+    global filepath
+
     global args
-    if args.path is None:
-        script_dir = os.path.abspath(os.path.dirname(__file__))
-        script_dir = script_dir.replace("\\code\\record", "")
-        filepath = "..\\zymacro\\input\\" + filename
-
-#        script_dir = os.path.dirname(__file__)
-#        filepath = os.path.join(
-#            script_dir,
-#            '',
-#            filename
-#        )
-
-    else:
-        filepath = filename
 
     if repeat_macro:
         print("Starting iteration {}...".format(i))
 
+    #region Get filepath
+    
+#    if use_multiple and i == 0:
+
+#        if args.path is None:
+#            filepath = filepath = "..\\zymacro\\input\\"
+#        else:
+#            filepath = filename
+
+        # Credit: https://pythonguides.com/python-get-all-files-in-directory/
+#        for root, dirs, files in os.walk(filepath):
+#            for file in files:
+#                macroList.append(os.path.join(root,file))
+
+#        if random_multiple:
+#            filepath = macroList[random.randrange(0,len(macroList)-1)]
+#        else:
+#            filepath = macroList[0]
+
+    if use_multiple and len(macroList) > 1:
+
+        if random_multiple:
+            filepath = macroList[random.randrange(0,len(macroList)-1)]
+        else:
+            filepath = macroList[i%len(macroList)]
+        
+    elif not use_multiple:
+        
+        if args.path is None:
+            #script_dir = os.path.abspath(os.path.dirname(__file__))
+            #script_dir = script_dir.replace("\\code\\record", "")
+            filepath = "..\\zymacro\\input\\" + filename
+
+    #        script_dir = os.path.dirname(__file__)
+    #        filepath = os.path.join(
+    #            script_dir,
+    #            '',
+    #            filename
+    #        )
+
+        else:
+            filepath = filename
+
+    elif use_multiple and len(macroList) == 1:
+        filepath = macroList[0]
+
+    if filepath == "" or filepath == None:
+        raise Exception("No file path specified for macro input!")
+    #endregion
+
+    print("Running macro: {} ...".format(filepath))
+
+    # Read the file
     with open(filepath, 'r') as jsonFile:
 
         # Parse the json
         global data
         data = simplejson.load(jsonFile)
 
-        pool = mp.Pool(6) # No. of threads
-        pool.map(actionIterator, range(0, len(data)))
-        pool.close()
-        pool.join()
+        global timerIndex
+        global iteratorIndex
+        timerIndex = 0
+        iteratorIndex = 0
+
+        #Credits: https://stackoverflow.com/questions/2846653/how-can-i-use-threading-in-python?rq=1
+
+        #global waitForTimestamp
+        #global waitForNextAction
+        #global waitForCurrentAction
+
+        #waitForTimestamp = False
+        #waitForNextAction = False
+        #waitForCurrentAction = False
+
+        #pool = mp.Pool(4)
+        #pool.map(actionTimer, range(0, len(data)))
+
+        #pool2 = mp.Pool(4) # No. of threads
+        #pool2.map(actionIterator, range(0, len(data)))
+
+        #pool.start()
+        #pool2.start()
+
+        #pool.wait()
+        #pool2.wait()
+
+        #pool.join()
+        #pool2.join()
+
+        actionPool = mp.Pool(4)
+        actionPool.map(actionPlayer, range(0, len(data)))
+        actionPool.close()
+        actionPool.join()
 
     if repeat_macro:
 
@@ -337,16 +444,15 @@ def playActions(filename, i=0):
                 sleep(repeat_macro_delay)
                 playActions(filename, i+1)
 
-def actionIterator(iterations): # Using multithreading function to increase accuracy of playback by eliminating queue
-
+def actionPlayer(index): # Old Player
+    
     global data
-    index = iterations
-
-#    if index >= len(data):
-#        return
 
     action = data[index]
-
+    
+    print("---")
+    print("Initializing Action...")
+    
     global executed_actions
     if executed_actions.__contains__(action):
         return
@@ -355,9 +461,6 @@ def actionIterator(iterations): # Using multithreading function to increase accu
 
     if Decimal(elapsed_time()) < Decimal(action['time']):
         sleep(float(Decimal(action['time']) - Decimal(elapsed_time())))
-
-#    while Decimal(elapsed_time()) < Decimal(action['time']):
-#        None
 
     if operation_halted:
         return
@@ -371,13 +474,14 @@ def actionIterator(iterations): # Using multithreading function to increase accu
             if operation_halted:
                 break
 
+    global action_start_time
     action_start_time = Decimal(time())
 
     # Look for esc input to exit
     if action['button'] == 'Key.esc':
         return
 
-    # Perform action
+    #region Perform action
     if action['type'] == 'keyDown':
         key = convertKey(action['button'])
         #pyautogui.keyDown(key)
@@ -406,7 +510,48 @@ def actionIterator(iterations): # Using multithreading function to increase accu
         if held_clicks.__contains__(click):
             held_clicks.remove(click)
         print("clickUp on {}".format(click))
+    #endregion
 
+    try:
+        next_action = data[index+1]
+    except IndexError:
+        return
+
+    action_time = Decimal(Decimal(next_action['time']) - Decimal(action['time']))
+    
+    if action_time < 0:
+        raise Exception('Unexpected action order')
+
+    action_time -= Decimal(Decimal(time()) - Decimal(action_start_time))
+
+    if action_time < 0:
+        action_time = 0
+    
+#            if action_time >= 1:
+
+    print("Sleeping for {}".format(round(action_time, 5)))
+
+    sleep(float(action_time))
+
+def actionTimer(index): # Use with actionIterator to time actions according to macro.json
+
+    global data
+
+    action = data[index]
+
+    global waitForTimestamp
+    global waitForNextAction
+    global waitForCurrentAction
+
+    if Decimal(elapsed_time()) < Decimal(action['time']):
+        sleep(float(Decimal(action['time']) - Decimal(elapsed_time())))
+
+    print("Initializing Action...")
+    
+    waitForTimestamp = True
+    while not waitForCurrentAction:
+        None
+    
     try:
         next_action = data[index+1]
     except IndexError:
@@ -417,15 +562,115 @@ def actionIterator(iterations): # Using multithreading function to increase accu
     if action_time < 0:
         raise Exception('Unexpected action order')
 
+    global action_start_time
     action_time -= Decimal(Decimal(time()) - Decimal(action_start_time))
 
     if action_time < 0:
         action_time = 0
     
 #            if action_time >= 1:
+
     print("Sleeping for {}".format(round(action_time, 5)))
 
     sleep(float(action_time))
+
+    waitForNextAction = True
+
+    global timerIndex
+    timerIndex += 1
+
+    waitForTimestamp = False
+    waitForCurrentAction = False
+    waitForNextAction = False
+
+def actionIterator(index): # Using multithreading function to increase accuracy of playback by eliminating queue
+
+    global data
+
+    global waitForTimestamp
+    global waitForNextAction
+    global waitForCurrentAction
+
+#    if index >= len(data):
+#        return
+
+    action = data[index]
+
+    global executed_actions
+    if executed_actions.__contains__(action):
+        return
+    else:
+        executed_actions.append(action)
+
+    if operation_halted:
+        return
+    elif paused:
+        print("Macro Operation Paused")
+        for key in held_keys:
+            pydirectinput.keyUp(key)
+        for click in held_clicks:
+            pydirectinput.mouseUp(click)
+        while paused:
+            if operation_halted:
+                break
+
+    global action_start_time
+    action_start_time = Decimal(time())
+
+    while not waitForTimestamp:
+        None
+
+    global timerIndex
+    global iteratorIndex
+
+    if not timerIndex == iteratorIndex:
+        raise Exception("actionTimer & actionIterator out of sync!")
+
+#    if Decimal(elapsed_time()) < Decimal(action['time']):
+#        sleep(float(Decimal(action['time']) - Decimal(elapsed_time())))
+
+#    while Decimal(elapsed_time()) < Decimal(action['time']):
+#        None
+
+    # Look for esc input to exit
+    if action['button'] == 'Key.esc':
+        return
+
+    #region Perform action
+    if action['type'] == 'keyDown':
+        key = convertKey(action['button'])
+        #pyautogui.keyDown(key)
+        pydirectinput.keyDown(key)
+        if not held_keys.__contains__(key):
+            held_keys.append(key)
+        print("keyDown on {}".format(key))
+    elif action['type'] == 'keyUp':
+        key = convertKey(action['button'])
+        #pyautogui.keyUp(key)
+        pydirectinput.keyUp(key)
+        if held_keys.__contains__(key):
+            held_keys.remove(key)
+        print("keyUp on {}".format(key))
+    elif action['type'] == 'clickDown':
+        #pyautogui.click(action['pos'][0], action['pos'][1], duration=0.25)
+        #pydirectinput.click(action['pos'][0], action['pos'][1], duration=0.25)
+        click = convertClick(action['button'])
+        pydirectinput.mouseDown(action['pos'][0], action['pos'][1], button=click)
+        if not held_clicks.__contains__(click):
+            held_clicks.append(click)
+        print("clickDown on {}".format(click))
+    elif action['type'] == 'clickUp':
+        click = convertClick(action['button'])
+        pydirectinput.mouseUp(action['pos'][0], action['pos'][1], button=click)
+        if held_clicks.__contains__(click):
+            held_clicks.remove(click)
+        print("clickUp on {}".format(click))
+    #endregion
+
+    waitForCurrentAction = True
+
+    while not waitForNextAction:
+        None
 
 def convertKey(button):
 
