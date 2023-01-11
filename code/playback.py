@@ -171,7 +171,7 @@ def main():
             for file in files:
                 macroList.append(os.path.join(root,file))
 
-        if random_multiple:
+        if random_multiple and len(macroList)-1 > 0:
             filepath = macroList[random.randrange(0,len(macroList)-1)]
         else:
             filepath = macroList[0]
