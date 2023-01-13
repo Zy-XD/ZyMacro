@@ -86,6 +86,10 @@ def main():
     print("ZyMacro - Playback")
 
     # Initialize logger
+    # Credits - https://www.stechies.com/python-insert-new-line-into-string/
+    # Credits - https://stackoverflow.com/questions/58977892/prevent-python-logger-from-printing-to-console
+    # Credits - https://stackoverflow.com/questions/16287662/how-to-print-brackets-in-python
+    # Credits - https://stackoverflow.com/questions/56558010/python-logger-always-outputting-debug-messages-regardless-of-filter
     global playbackLog
     global playbackLogPath
     logging.basicConfig(filename=playbackLogPath, format='[%(levelname)s][%(asctime)s] %(name)s > %(message)s', filemode="w", level=logging.DEBUG)
