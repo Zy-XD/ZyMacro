@@ -12,6 +12,7 @@ import threading
 import pydirectinput
 from decimal import Decimal
 import multiprocessing.dummy as mp
+import logging
 
 # from recorder import elapsed_time
 
@@ -69,11 +70,36 @@ executed_actions = list()
 
 global macroList
 macroList = list()
+
+global playbackLog
+playbackLog = None
+
+global consoleLog
+consoleLog = None
+
+global playbackLogPath
+playbackLogPath = "..\\zymacro\\logs\\playback.log"
 #endregion
 
 def main():
 
     print("ZyMacro - Playback")
+
+    # Initialize logger
+    global playbackLog
+    global playbackLogPath
+    logging.basicConfig(filename=playbackLogPath, format='[%(levelname)s][%(asctime)s] %(name)s > %(message)s', filemode="w", level=logging.DEBUG)
+
+    #consoleLog = logging.StreamHandler()
+    #consoleLog.setLevel(logging.ERROR)
+    #logging.getLogger(__name__ + "_console").addHandler(consoleLog)
+
+    #playbackLog = logging.getLogger(__name__)
+    pl = logging.StreamHandler()
+    #pl.setLevel(logging.DEBUG)
+    pl.setLevel(logging.ERROR)
+    playbackLog = logging.getLogger(__name__)
+    #logging.getLogger(__name__ + "_log").addHandler(playbackLog)
 
     # Input options here
 
@@ -183,13 +209,15 @@ def main():
             if path != macroList[len(macroList)-1]:
                 macros_used += ", "
 
-        print("Using macros: {}".format(macros_used))
+        #print("Using macros: {}".format(macros_used))
+        MACRO_FILE = macros_used
 
-    else:
-        print("Using macro: {}".format(MACRO_FILE))
+    print("Using macro: {}".format(MACRO_FILE))
+    playbackLog.debug("Using macro: {}".format(MACRO_FILE))
 
     print("Settings: Start Delay - {} | Duration - {} | Repeat - {} | Repeat Delay - {} | Repeat Random Delay - {} | Multiple Macros - {} | Random Multiple - {}"
         .format(macro_start_delay, macro_duration, repeat_macro, repeat_macro_delay, repeat_macro_random_delay, use_multiple, random_multiple))
+    playbackLog.debug("Settings: Start Delay - {} | Duration - {} | Repeat - {} | Repeat Delay - {} | Repeat Random Delay - {} | Multiple Macros - {} | Random Multiple - {}".format(macro_start_delay, macro_duration, repeat_macro, repeat_macro_delay, repeat_macro_random_delay, use_multiple, random_multiple))
     #endregion
 
     global TOGGLE_PLAYBACK
@@ -213,7 +241,8 @@ def main():
     with keyboard.Listener(on_release=start_playback) as listener:
         listener.join()
 
-    print("Initializing playback...")
+    print("Initializing playback at [{}]...".format(round(Decimal(time()), 3)))
+    playbackLog.debug("Playback starting")
 
     initializePyAutoGUI()
     countdownTimer()
@@ -246,6 +275,9 @@ def main():
         sleep(2.00)
         print("Macro Operation Successfully Executed")
         operation_halted = True
+
+    print("Log saved at: {}".format(os.path.abspath(playbackLogPath)))
+    playbackLog.debug("Log recorded - {}".format(os.path.abspath(playbackLogPath)))
     
     global operation_stopped
     operation_stopped = True
@@ -312,6 +344,8 @@ def countdownTimer():
         print(".", end="", flush=True)
         sleep(1)
     print("Macro Initialized")
+    global playbackLog
+    playbackLog.debug("Macro Initialized")
 
 def playActions(filename, i=0):
     
@@ -321,11 +355,14 @@ def playActions(filename, i=0):
     global macroList
 
     global filepath
+    global playbackLog
 
     global args
 
     if repeat_macro:
         print("Starting iteration {}...".format(i))
+        playbackLog.debug("---")
+        playbackLog.debug("Iteration - {}".format(i))
 
     #region Get filepath
     
@@ -349,9 +386,9 @@ def playActions(filename, i=0):
     if use_multiple and len(macroList) > 1:
 
         if random_multiple:
-            filepath = macroList[random.randrange(0,len(macroList)-1)]
+            filepath = filename[random.randrange(0,len(macroList)-1)]
         else:
-            filepath = macroList[i%len(macroList)]
+            filepath = filename[i%len(macroList)]
         
     elif not use_multiple:
         
@@ -371,13 +408,14 @@ def playActions(filename, i=0):
             filepath = filename
 
     elif use_multiple and len(macroList) == 1:
-        filepath = macroList[0]
+        filepath = filename[0]
 
     if filepath == "" or filepath == None:
         raise Exception("No file path specified for macro input!")
     #endregion
 
-    print("Running macro: {} ...".format(filepath))
+    print("Running macro: {} ...".format(os.path.abspath(filepath)))
+    playbackLog.debug("Macro - {}".format(os.path.abspath(filepath)))
 
     # Read the file
     with open(filepath, 'r') as jsonFile:
@@ -428,20 +466,25 @@ def playActions(filename, i=0):
 
         if Decimal(elapsed_time()) > macro_duration:
             print("Reached duration specified...")
+            playbackLog.debug("Operation Completed - {} elapsed".format(macro_duration))
         elif operation_halted:
             print("Halting Macro Operation...")
             sleep(1.0)
             print("Macro Operation Stopped Unexpectedly")
+            playbackLog.debug("Operation Adruptly Halted - {} elapsed".format(macro_duration))
             global operation_stopped
             operation_stopped = True
         else:
             if repeat_macro_random_delay:
                 randomdelay = repeat_macro_delay * random()
-                print("Delaying for {}".format(randomdelay))
-                sleep(randomdelay)
+                rd = randomdelay
+                print("Delaying for {}".format(rd))
+                playbackLog.debug("Random Delay - {}".format(rd))
+                sleep(rd)
                 playActions(filename, i+1)
             else:
                 print("Delaying for {}".format(repeat_macro_delay))
+                playbackLog.debug("Delay - {}".format(repeat_macro_delay))
                 sleep(repeat_macro_delay)
                 playActions(filename, i+1)
 
@@ -451,9 +494,11 @@ def actionPlayer(index): # Old Player
 
     action = data[index]
     
-    print("---")
-    print("Initializing Action...")
-    
+#    print("---")
+#    print("Initializing Action...")
+    playbackLog.debug("---")
+    playbackLog.debug("Initializing Action")
+
     global executed_actions
     if executed_actions.__contains__(action):
         return
@@ -467,6 +512,7 @@ def actionPlayer(index): # Old Player
         return
     elif paused:
         print("Macro Operation Paused")
+        playbackLog.debug("Operation Paused")
         for key in held_keys:
             pydirectinput.keyUp(key)
         for click in held_clicks:
@@ -489,14 +535,16 @@ def actionPlayer(index): # Old Player
         pydirectinput.keyDown(key)
         if not held_keys.__contains__(key):
             held_keys.append(key)
-        print("keyDown on {}".format(key))
+#        print("keyDown on {}".format(key))
+        playbackLog.debug("-keyDown- on {}".format(key))
     elif action['type'] == 'keyUp':
         key = convertKey(action['button'])
         #pyautogui.keyUp(key)
         pydirectinput.keyUp(key)
         if held_keys.__contains__(key):
             held_keys.remove(key)
-        print("keyUp on {}".format(key))
+#        print("keyUp on {}".format(key))
+        playbackLog.debug("-keyUp- on {}".format(key))
     elif action['type'] == 'clickDown':
         #pyautogui.click(action['pos'][0], action['pos'][1], duration=0.25)
         #pydirectinput.click(action['pos'][0], action['pos'][1], duration=0.25)
@@ -504,13 +552,15 @@ def actionPlayer(index): # Old Player
         pydirectinput.mouseDown(action['pos'][0], action['pos'][1], button=click)
         if not held_clicks.__contains__(click):
             held_clicks.append(click)
-        print("clickDown on {}".format(click))
+#        print("clickDown on {}".format(click))
+        playbackLog.debug("-clickDown- on {}".format(click))
     elif action['type'] == 'clickUp':
         click = convertClick(action['button'])
         pydirectinput.mouseUp(action['pos'][0], action['pos'][1], button=click)
         if held_clicks.__contains__(click):
             held_clicks.remove(click)
-        print("clickUp on {}".format(click))
+#        print("clickUp on {}".format(click))
+        playbackLog.debug("-clickUp- on {}".format(click))
     #endregion
 
     try:
@@ -530,7 +580,8 @@ def actionPlayer(index): # Old Player
     
 #            if action_time >= 1:
 
-    print("Sleeping for {}".format(round(action_time, 5)))
+#    print("Sleeping for {}".format(round(action_time, 5)))
+    playbackLog.debug("Action Sleep For - {}".format(round(action_time, 5)))
 
     sleep(float(action_time))
 
