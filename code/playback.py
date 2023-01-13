@@ -416,7 +416,7 @@ def playActions(filename, i=0):
         #pool.join()
         #pool2.join()
 
-        actionPool = mp.Pool(8)
+        actionPool = mp.Pool(2)
         actionPool.map(actionPlayer, range(0, len(data)))
         actionPool.close()
         actionPool.terminate()
