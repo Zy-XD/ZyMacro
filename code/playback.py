@@ -520,6 +520,7 @@ def actionPlayer(index): # Old Player
     elif paused:
         print("Macro Operation Paused")
         playbackLog.debug("Operation Paused")
+        localpause = True
         for key in held_keys:
             pydirectinput.keyUp(key)
         for click in held_clicks:
@@ -527,6 +528,11 @@ def actionPlayer(index): # Old Player
         while paused:
             if operation_halted:
                 break
+    
+    if localpause:
+        print("Macro Operation Resumed")
+        playbackLog.debug("Operation Resumed")
+        localpause = False
 
     global action_start_time
     action_start_time = Decimal(time())
