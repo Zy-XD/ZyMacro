@@ -213,11 +213,14 @@ def main():
             if path != macroList[len(macroList)-1]:
                 macros_used += ", "
 
-        #print("Using macros: {}".format(macros_used))
-        MACRO_FILE = macros_used
+        print("Using macros: {}".format(macros_used))
+        playbackLog.debug("Using macro: {}".format(macros_used))
+        MACRO_FILE = macroList
+        #MACRO_FILE = macros_used
 
-    print("Using macro: {}".format(MACRO_FILE))
-    playbackLog.debug("Using macro: {}".format(MACRO_FILE))
+    else:
+        print("Using macro: {}".format(MACRO_FILE))
+        playbackLog.debug("Using macro: {}".format(MACRO_FILE))
 
     print("Settings: Start Delay - {} | Duration - {} | Repeat - {} | Repeat Delay - {} | Repeat Random Delay - {} | Multiple Macros - {} | Random Multiple - {}"
         .format(macro_start_delay, macro_duration, repeat_macro, repeat_macro_delay, repeat_macro_random_delay, use_multiple, random_multiple))
