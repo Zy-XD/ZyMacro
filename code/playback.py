@@ -512,6 +512,9 @@ def actionPlayer(index): # Old Player
     else:
         executed_actions.append(action)
 
+        global localpause
+        localpause = False
+
     if Decimal(elapsed_time()) < Decimal(action['time']):
         sleep(float(Decimal(action['time']) - Decimal(elapsed_time())))
 
@@ -548,7 +551,7 @@ def actionPlayer(index): # Old Player
         pydirectinput.keyDown(key)
         if not held_keys.__contains__(key):
             held_keys.append(key)
-#        print("keyDown on {}".format(key))
+        print("keyDown on {}".format(key))
         playbackLog.debug("-keyDown- on {}".format(key))
     elif action['type'] == 'keyUp':
         key = convertKey(action['button'])
@@ -556,7 +559,7 @@ def actionPlayer(index): # Old Player
         pydirectinput.keyUp(key)
         if held_keys.__contains__(key):
             held_keys.remove(key)
-#        print("keyUp on {}".format(key))
+        print("keyUp on {}".format(key))
         playbackLog.debug("-keyUp- on {}".format(key))
     elif action['type'] == 'clickDown':
         #pyautogui.click(action['pos'][0], action['pos'][1], duration=0.25)
@@ -565,14 +568,14 @@ def actionPlayer(index): # Old Player
         pydirectinput.mouseDown(action['pos'][0], action['pos'][1], button=click)
         if not held_clicks.__contains__(click):
             held_clicks.append(click)
-#        print("clickDown on {}".format(click))
+        print("clickDown on {}".format(click))
         playbackLog.debug("-clickDown- on {}".format(click))
     elif action['type'] == 'clickUp':
         click = convertClick(action['button'])
         pydirectinput.mouseUp(action['pos'][0], action['pos'][1], button=click)
         if held_clicks.__contains__(click):
             held_clicks.remove(click)
-#        print("clickUp on {}".format(click))
+        print("clickUp on {}".format(click))
         playbackLog.debug("-clickUp- on {}".format(click))
     #endregion
 
@@ -593,7 +596,7 @@ def actionPlayer(index): # Old Player
     
 #            if action_time >= 1:
 
-#    print("Sleeping for {}".format(round(action_time, 5)))
+    print("Sleeping for {}".format(round(action_time, 5)))
     playbackLog.debug("Action Sleep For - {}".format(round(action_time, 5)))
 
     sleep(float(action_time))
