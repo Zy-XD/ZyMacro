@@ -14,6 +14,7 @@ from decimal import Decimal
 import multiprocessing.dummy as mp
 import logging
 import glob
+from datetime import datetime
 
 # from recorder import elapsed_time
 
@@ -202,7 +203,8 @@ def main():
         #    for file in files:
         #        macroList.append(os.path.join(root,file))
 
-        macroList = glob.glob(str([root[0] for root in os.walk(filepath)]) + "*.json")
+        for root in os.walk(filepath):
+            macroList = glob.glob(os.path.join(root,"*.json"))
 
         if random_multiple and len(macroList)-1 > 0:
             filepath = macroList[random.randrange(0,len(macroList)-1)]
@@ -256,8 +258,9 @@ def main():
     with keyboard.Listener(on_release=start_playback) as listener:
         listener.join()
 
-    print("Initializing playback at [{}]...".format(round(Decimal(time()), 3)))
-    playbackLog.debug("Playback starting")
+    #print("Initializing playback at [{}]...".format(round(Decimal(time()), 3)))
+    print("Initializing playback at [{}]...".format(datetime.now().strftime('%A %d-%m-%Y, %H:%M:%S')))
+    playbackLog.debug("Playback starting at [{}]".format(datetime.now().strftime('%A %d-%m-%Y, %H:%M:%S')))
 
     initializePyAutoGUI()
     countdownTimer()
