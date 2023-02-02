@@ -34,7 +34,7 @@ global macro_start_delay
 macro_start_delay = int(5)
 
 global MACRO_FILE
-MACRO_FILE = [root[0] for root in os.walk("..\\zymacro\\input\\")] + "macro.json"
+MACRO_FILE = str([root[0] for root in os.walk("..\\zymacro\\input\\")]) + "macro.json"
 
 global TOGGLE_PAUSE
 TOGGLE_PAUSE = keyboard.Key.pause
@@ -202,7 +202,7 @@ def main():
         #    for file in files:
         #        macroList.append(os.path.join(root,file))
 
-        macroList = glob.glob([root[0] for root in os.walk(filepath)] + "*.json")
+        macroList = glob.glob(str([root[0] for root in os.walk(filepath)]) + "*.json")
 
         if random_multiple and len(macroList)-1 > 0:
             filepath = macroList[random.randrange(0,len(macroList)-1)]
