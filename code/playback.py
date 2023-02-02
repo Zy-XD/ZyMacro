@@ -34,7 +34,7 @@ global macro_start_delay
 macro_start_delay = int(5)
 
 global MACRO_FILE
-MACRO_FILE = os.walk("..\\zymacro\\input\\")[0] + "macro.json"
+MACRO_FILE = [root[0] for root in os.walk("..\\zymacro\\input\\")] + "macro.json"
 
 global TOGGLE_PAUSE
 TOGGLE_PAUSE = keyboard.Key.pause
