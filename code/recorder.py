@@ -135,7 +135,8 @@ def file_rename(filepath = str, edit_name = str): # Output file rename in the ca
                 j += 1
             else:
                 i += 1
-                return edit_name
+                
+        return edit_name
 
     else:
         return edit_name

@@ -13,6 +13,7 @@ import pydirectinput
 from decimal import Decimal
 import multiprocessing.dummy as mp
 import logging
+import glob
 
 # from recorder import elapsed_time
 
@@ -33,7 +34,7 @@ global macro_start_delay
 macro_start_delay = int(5)
 
 global MACRO_FILE
-MACRO_FILE = "macro.json"
+MACRO_FILE = os.walk("..\\zymacro\\input\\")[0] + "macro.json"
 
 global TOGGLE_PAUSE
 TOGGLE_PAUSE = keyboard.Key.pause
@@ -197,12 +198,16 @@ def main():
             filepath = args.path
 
         # Credit: https://pythonguides.com/python-get-all-files-in-directory/
-        for root, dirs, files in os.walk(filepath):
-            for file in files:
-                macroList.append(os.path.join(root,file))
+        #for root, dirs, files in os.walk(filepath):
+        #    for file in files:
+        #        macroList.append(os.path.join(root,file))
+
+        macroList = glob.glob(os.walk(filepath)[0] + "*.json")
 
         if random_multiple and len(macroList)-1 > 0:
             filepath = macroList[random.randrange(0,len(macroList)-1)]
+        elif random_multiple and len(macroList)-1 < 0:
+            playbackLog.error("No Macro Files Found")
         else:
             filepath = macroList[0]
 
@@ -219,8 +224,11 @@ def main():
         #MACRO_FILE = macros_used
 
     else:
-        print("Using macro: {}".format(MACRO_FILE))
-        playbackLog.debug("Using macro: {}".format(MACRO_FILE))
+        if os.path.exists(MACRO_FILE):
+            print("Using macro: {}".format(MACRO_FILE))
+            playbackLog.debug("Using macro: {}".format(MACRO_FILE))
+        else:
+            playbackLog.error("No Macro Files Found")
 
     print("Settings: Start Delay - {} | Duration - {} | Repeat - {} | Repeat Delay - {} | Repeat Random Delay - {} | Multiple Macros - {} | Random Multiple - {}"
         .format(macro_start_delay, macro_duration, repeat_macro, repeat_macro_delay, repeat_macro_random_delay, use_multiple, random_multiple))
