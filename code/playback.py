@@ -204,7 +204,7 @@ def main():
         #        macroList.append(os.path.join(root,file))
 
         for root in os.walk(filepath):
-            macroList = glob.glob(os.path.join(root,"*.json"))
+            macroList = glob.glob(os.path.join(root[0],"*.json"))
 
         if random_multiple and len(macroList)-1 > 0:
             filepath = macroList[random.randrange(0,len(macroList)-1)]
