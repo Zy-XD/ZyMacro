@@ -34,7 +34,7 @@ global macro_start_delay
 macro_start_delay = int(5)
 
 global MACRO_FILE
-MACRO_FILE = str([root[0] for root in os.walk("..\\zymacro\\input\\")]) + "macro.json"
+MACRO_FILE = "..\\zymacro\\input\\" + "macro.json"
 
 global TOGGLE_PAUSE
 TOGGLE_PAUSE = keyboard.Key.pause
@@ -410,7 +410,7 @@ def playActions(filename, i=0):
         if args.path is None:
             #script_dir = os.path.abspath(os.path.dirname(__file__))
             #script_dir = script_dir.replace("\\code\\record", "")
-            filepath = "..\\zymacro\\input\\" + filename
+            filepath = filename
 
     #        script_dir = os.path.dirname(__file__)
     #        filepath = os.path.join(
